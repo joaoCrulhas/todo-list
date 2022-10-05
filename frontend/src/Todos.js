@@ -1,5 +1,6 @@
+import { ApiService } from "./services/api";
 import DatePicker from "react-datepicker";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import makeStyles from "@mui/styles/makeStyles";
 import {
   Container,
@@ -39,19 +40,24 @@ const useStyles = makeStyles({
 });
 
 function Todos() {
+  const apiService = useCallback(() => {
+    return new ApiService("http://localhost:3001");
+  }, [])();
+
   const classes = useStyles();
   const [todos, setTodos] = useState([]);
-  const [newTodoText, setNewTodoText] = useState("");
   const [newTodo, setNewTodo] = useState({
     text: "",
     endDate: new Date(),
   });
 
   useEffect(() => {
-    fetch("http://localhost:3001/")
-      .then((response) => response.json())
-      .then((todos) => setTodos(todos));
-  }, [setTodos]);
+    async function fetchData() {
+      const response = await apiService.get();
+      setTodos(response);
+    }
+    fetchData();
+  }, [apiService]);
 
   function addTodo({ text, endDate }) {
     const parsedDate = endDate.toISOString().substring(0, 10);
