@@ -2,12 +2,12 @@ export class ApiService {
   constructor(baseUrl) {
     this.baseUrl = baseUrl;
   }
-  async index() {
-    const response = await fetch(this.baseUrl);
+  async index(offset = 0) {
+    const response = await fetch(this.baseUrl + `/?offset=${offset}`);
     return await response.json();
   }
   async delete(id) {
-    await fetch(`http://localhost:3001/${id}`, {
+    await fetch(`${this.baseUrl}/${id}`, {
       method: "DELETE",
     });
     return { id };

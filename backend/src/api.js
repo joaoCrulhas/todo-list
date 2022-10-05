@@ -28,8 +28,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 app.get('/', async (req, res) => {
+  const { offset } = req.query;
   const todos = database.client.db('todos').collection('todos');
-  const response = await todos.find({}).toArray();
+  const response = await todos.find({}).limit(20).skip(parseInt(offset)).toArray();
   res.status(200);
   res.json(response);
 });
