@@ -1,0 +1,9 @@
+div.react-datepicker-wrapper {
+  justify-content: center;
+  align-self: center;
+}
+
+.center-element {
+  display: flex;
+  justify-content: right;
+}
