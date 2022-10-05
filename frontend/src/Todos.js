@@ -11,6 +11,7 @@ import {
   TextField,
   Checkbox,
 } from "@mui/material";
+import Task from "./Task";
 
 const useStyles = makeStyles({
   addTodoContainer: { padding: 10 },
@@ -53,17 +54,21 @@ function Todos() {
   }, [setTodos]);
 
   function addTodo({ text, endDate }) {
+    const parsedDate = endDate.toISOString().substring(0, 10);
     fetch("http://localhost:3001/", {
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
       },
       method: "POST",
-      body: JSON.stringify({ text, endDate }),
+      body: JSON.stringify({ text, endDate: parsedDate }),
     })
       .then((response) => response.json())
       .then((todo) => setTodos([...todos, todo]));
-    setNewTodoText("");
+    setNewTodo({
+      text: "",
+      endDate: new Date(),
+    });
   }
 
   function toggleTodoCompleted(id) {
@@ -147,43 +152,17 @@ function Todos() {
       {todos.length > 0 && (
         <Paper className={classes.todosContainer}>
           <Box display="flex" flexDirection="column" alignItems="stretch">
-            {todos.map(({ id, text, completed, endDate }) => (
-              <Box
-                key={id}
-                display="flex"
-                flexDirection="row"
-                alignItems="center"
-                className={classes.todoContainer}
-              >
-                <Checkbox
-                  checked={completed}
-                  onChange={() => toggleTodoCompleted(id)}
-                ></Checkbox>
-                <Box flexGrow={1}>
-                  <Typography
-                    className={completed ? classes.todoTextCompleted : ""}
-                    variant="body1"
-                  >
-                    {text}
-                  </Typography>
-                </Box>
-                <Box flexGrow={1}>
-                  <Typography
-                    className={completed ? classes.todoTextCompleted : ""}
-                    variant="body1"
-                  >
-                    {endDate}
-                  </Typography>
-                </Box>
-                <Button
-                  className={classes.deleteTodo}
-                  startIcon={<Icon>delete</Icon>}
-                  onClick={() => deleteTodo(id)}
-                >
-                  Delete
-                </Button>
-              </Box>
-            ))}
+            {todos.map(({ id, text, completed, endDate }) => {
+              const task = { id, text, completed, endDate, classes };
+              return (
+                <Task
+                  key={task.id}
+                  data={task}
+                  deleteTodo={deleteTodo}
+                  toggleComplete={toggleTodoCompleted}
+                />
+              );
+            })}
           </Box>
         </Paper>
       )}
