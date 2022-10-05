@@ -10,7 +10,6 @@ import {
   Paper,
   Box,
   TextField,
-  Checkbox,
 } from "@mui/material";
 import Task from "./Task";
 

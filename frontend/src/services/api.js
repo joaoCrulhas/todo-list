@@ -7,7 +7,7 @@ export class ApiService {
     return await response.json();
   }
   async delete(id) {
-    const response = await fetch(`http://localhost:3001/${id}`, {
+    await fetch(`http://localhost:3001/${id}`, {
       method: "DELETE",
     });
     return { id };
