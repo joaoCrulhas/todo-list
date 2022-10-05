@@ -42,7 +42,7 @@ const useStyles = makeStyles({
 function Todos() {
   const apiService = useCallback(() => {
     return new ApiService("http://localhost:3001");
-  }, [])();
+  }, []);
 
   const classes = useStyles();
   const [todos, setTodos] = useState([]);
@@ -53,55 +53,44 @@ function Todos() {
 
   useEffect(() => {
     async function fetchData() {
-      const response = await apiService.get();
+      const response = await apiService().index();
       setTodos(response);
     }
     fetchData();
   }, [apiService]);
 
-  function addTodo({ text, endDate }) {
+  async function addTodo({ text, endDate }) {
+    if (!text) {
+      alert("Add a text in the text task");
+      return;
+    }
     const parsedDate = endDate.toISOString().substring(0, 10);
-    fetch("http://localhost:3001/", {
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-      method: "POST",
-      body: JSON.stringify({ text, endDate: parsedDate }),
-    })
-      .then((response) => response.json())
-      .then((todo) => setTodos([...todos, todo]));
+    const response = await apiService().post({
+      text,
+      endDate: parsedDate,
+    });
+    setTodos([...todos, response]);
     setNewTodo({
       text: "",
       endDate: new Date(),
     });
   }
 
-  function toggleTodoCompleted(id) {
-    fetch(`http://localhost:3001/${id}`, {
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-      method: "PUT",
-      body: JSON.stringify({
-        completed: !todos.find((todo) => todo.id === id).completed,
-      }),
-    }).then(() => {
-      const newTodos = [...todos];
-      const modifiedTodoIndex = newTodos.findIndex((todo) => todo.id === id);
-      newTodos[modifiedTodoIndex] = {
-        ...newTodos[modifiedTodoIndex],
-        completed: !newTodos[modifiedTodoIndex].completed,
-      };
-      setTodos(newTodos);
-    });
+  async function toggleTodoCompleted(id) {
+    const completed = !todos.find((todo) => todo.id === id).completed;
+    await apiService().put(id, completed);
+    const newTodos = [...todos];
+    const modifiedTodoIndex = newTodos.findIndex((todo) => todo.id === id);
+    newTodos[modifiedTodoIndex] = {
+      ...newTodos[modifiedTodoIndex],
+      completed: !newTodos[modifiedTodoIndex].completed,
+    };
+    setTodos(newTodos);
   }
 
-  function deleteTodo(id) {
-    fetch(`http://localhost:3001/${id}`, {
-      method: "DELETE",
-    }).then(() => setTodos(todos.filter((todo) => todo.id !== id)));
+  async function deleteTodo(id) {
+    const { id: taskid } = await apiService().delete(id);
+    setTodos(todos.filter((todo) => todo.id !== taskid));
   }
 
   return (

@@ -1,6 +1,7 @@
 const express = require('express');
 const { v4: generateId } = require('uuid');
 const database = require('./database');
+const ObjectID = require('mongodb').ObjectID;
 
 const app = express();
 
@@ -35,8 +36,6 @@ app.get('/', async (req, res) => {
 
 app.post('/', async (req, res) => {
   const { text, endDate } = req.body;
-  console.log(text, endDate)
-
   if (typeof text !== 'string') {
     res.status(400);
     res.json({ message: "invalid 'text' expected string" });
@@ -58,11 +57,10 @@ app.put('/:id', async (req, res) => {
     res.json({ message: "invalid 'completed' expected boolean" });
     return;
   }
-
-  await database.client.db('todos').collection('todo').updateOne(
-    { id },
-    { $set: { completed } },
-  );
+  const myquery = { id: id };
+  const newvalues = { $set: { completed } };
+  await database.client.db('todos').collection('todos').updateOne(myquery, newvalues)
+  res.json({ id })
   res.status(200);
   res.end();
 });
