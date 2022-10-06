@@ -1,6 +1,6 @@
 import { ApiService } from "./services/api";
 import DatePicker from "react-datepicker";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import makeStyles from "@mui/styles/makeStyles";
 import {
   Container,
@@ -43,20 +43,58 @@ function Todos() {
     return new ApiService("http://localhost:3001");
   }, []);
 
+  const [loading, setLoading] = useState(true);
+  const loader = useRef(null);
+  const [page, setPage] = useState(0);
   const classes = useStyles();
   const [todos, setTodos] = useState([]);
+  const [finish, setFinish] = useState(false);
   const [newTodo, setNewTodo] = useState({
     text: "",
     endDate: new Date(),
   });
 
-  useEffect(() => {
-    async function fetchData() {
-      const response = await apiService().index();
-      setTodos(response);
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    const response = await apiService().index(page * 20);
+    console.log(response);
+    if (!response.length || response.length < 20) {
+      setFinish(true);
+      setLoading(false);
+      return;
     }
+    setTodos((prev) => {
+      return [...prev, ...response];
+    });
+    setLoading(false);
+  }, [apiService, page]);
+
+  const handleObserver = useCallback(
+    (entries) => {
+      const target = entries[0];
+      if (target.isIntersecting && !loading && !finish) {
+        setPage((prev) => prev + 1);
+      }
+    },
+    [loading, finish]
+  );
+
+  useEffect(() => {
+    console.log("Test01");
     fetchData();
-  }, [apiService]);
+  }, [fetchData]);
+
+  useEffect(() => {
+    const option = {
+      root: null,
+      rootMargin: "20px",
+      threshold: 0,
+    };
+    const observer = new IntersectionObserver(handleObserver, option);
+    if (loader.current) {
+      observer.observe(loader.current);
+    }
+  }, [handleObserver]);
 
   async function addTodo({ text, endDate }) {
     if (!text) {
@@ -143,25 +181,38 @@ function Todos() {
           </Button>
         </Box>
       </Paper>
+
       {todos.length > 0 && (
-        <Paper className={classes.todosContainer}>
-          <Box display="flex" flexDirection="column" alignItems="stretch">
-            {todos.map(({ id, text, completed, endDate }) => {
-              const task = { id, text, completed, endDate, classes };
-              return (
-                <Task
-                  key={task.id}
-                  data={task}
-                  deleteTodo={deleteTodo}
-                  toggleComplete={toggleTodoCompleted}
-                />
-              );
-            })}
-          </Box>
-        </Paper>
+        <TodoList
+          classes={classes}
+          data={todos}
+          deleteTodo={deleteTodo}
+          toggleComplete={toggleTodoCompleted}
+        />
       )}
+      {!finish ? <div ref={loader} /> : null}
     </Container>
   );
 }
+
+const TodoList = ({ classes, data, deleteTodo, toggleTodoCompleted }) => {
+  return (
+    <Paper className={classes.todosContainer}>
+      <Box display="flex" flexDirection="column" alignItems="stretch">
+        {data.map(({ id, text, completed, endDate }) => {
+          const task = { id, text, completed, endDate, classes };
+          return (
+            <Task
+              key={task.id}
+              data={task}
+              deleteTodo={deleteTodo}
+              toggleComplete={toggleTodoCompleted}
+            />
+          );
+        })}
+      </Box>
+    </Paper>
+  );
+};
 
 export default Todos;
