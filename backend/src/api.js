@@ -1,5 +1,4 @@
 const express = require('express');
-const database = require('./database');
 const taskController = require("./controllers/task")
 
 const app = express();
