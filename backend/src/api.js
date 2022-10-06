@@ -1,7 +1,6 @@
 const express = require('express');
-const { v4: generateId } = require('uuid');
 const database = require('./database');
-const ObjectID = require('mongodb').ObjectID;
+const taskController = require("./controllers/task")
 
 const app = express();
 
@@ -23,54 +22,33 @@ function requestLogger(req, res, next) {
 
 app.use(requestLogger);
 app.use(require('cors')());
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-app.get('/', async (req, res) => {
-  const { offset } = req.query;
-  const todos = database.client.db('todos').collection('todos');
-  const response = await todos.find({}).limit(20).skip(parseInt(offset)).toArray();
-  res.status(200);
-  res.json(response);
-});
 
-app.post('/', async (req, res) => {
-  const { text, endDate } = req.body;
+function validateBodyRequest(req, res, next) {
+  const { text } = req.body;
   if (typeof text !== 'string') {
     res.status(400);
     res.json({ message: "invalid 'text' expected string" });
     return;
-  } 
+  }
+  next()
+}
 
-  const todo = { id: generateId(), text, completed: false, endDate };
-  await database.client.db('todos').collection('todos').insertOne(todo);
-  res.status(201);
-  res.json(todo);
-});
-
-app.put('/:id', async (req, res) => {
-  const { id } = req.params;
+function validateBodyRequestPut(req, res, next) {
   const { completed } = req.body;
-
   if (typeof completed !== 'boolean') {
     res.status(400);
     res.json({ message: "invalid 'completed' expected boolean" });
     return;
   }
-  const myquery = { id: id };
-  const newvalues = { $set: { completed } };
-  await database.client.db('todos').collection('todos').updateOne(myquery, newvalues)
-  res.json({ id })
-  res.status(200);
-  res.end();
-});
+  next()
+}
 
-app.delete('/:id', async (req, res) => {
-  const { id } = req.params;
-  await database.client.db('todos').collection('todos').deleteOne({ id });
-  res.status(203);
-  res.end();
-});
+app.get('/', taskController.index);
+app.put('/:id', validateBodyRequestPut, taskController.put);
+app.post('/', validateBodyRequest, taskController.post);
+app.delete('/:id', taskController.destroy);
 
 module.exports = app;
