@@ -1,13 +1,17 @@
 const { v4: generateId } = require('uuid');
 const database = require("../database");
 const index = async (req, res) => {
-    const { offset } = req.query;
+    let { offset } = req.query;
+    offset = (offset)  ? offset :0; 
     const todos = database.client.db('todos').collection('todos');
     let response = await todos.find({}).toArray();
     response = response.sort((a,b) => a.position - b.position);
+    const start = (parseInt(offset));
+    const end = start + 20;
+    const splitedArray = response.slice(start, end);
     res.status(200);
-    res.json(response);
-    res.end();
+    res.json(splitedArray);
+    return res.end();
 }
 const post = async (req, res) => {
     const { text, endDate } = req.body;
