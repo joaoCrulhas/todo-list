@@ -3,14 +3,16 @@ const database = require("../database");
 const index = async (req, res) => {
     const { offset } = req.query;
     const todos = database.client.db('todos').collection('todos');
-    const response = await todos.find({}).limit(20).skip(parseInt(offset)).toArray();
+    let response = await todos.find({}).toArray();
+    response = response.sort((a,b) => a.position - b.position);
     res.status(200);
     res.json(response);
     res.end();
 }
 const post = async (req, res) => {
     const { text, endDate } = req.body;
-    const todo = { id: generateId(), text, completed: false, endDate };
+    const position = await database.client.db('todos').collection('todos').countDocuments();
+    const todo = { id: generateId(), text, completed: false, endDate, position };
     await database.client.db('todos').collection('todos').insertOne(todo);
     res.status(201);
     res.json(todo);

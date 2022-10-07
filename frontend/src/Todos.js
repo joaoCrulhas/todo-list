@@ -3,13 +3,14 @@ import DatePicker from "react-datepicker";
 import { useState, useEffect, useCallback, useRef } from "react";
 import makeStyles from "@mui/styles/makeStyles";
 import {
+  TextField,
   Container,
   Typography,
   Button,
   Icon,
   Paper,
   Box,
-  TextField,
+  Grid,
 } from "@mui/material";
 import Task from "./Task";
 
@@ -57,15 +58,14 @@ function Todos() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     const response = await apiService().index(page * 20);
-    console.log(response);
+    setTodos((prev) => {
+      return [...prev, ...response];
+    });
     if (!response.length || response.length < 20) {
       setFinish(true);
       setLoading(false);
       return;
     }
-    setTodos((prev) => {
-      return [...prev, ...response];
-    });
     setLoading(false);
   }, [apiService, page]);
 
@@ -80,7 +80,6 @@ function Todos() {
   );
 
   useEffect(() => {
-    console.log("Test01");
     fetchData();
   }, [fetchData]);
 
@@ -136,66 +135,75 @@ function Todos() {
         Todos
       </Typography>
       <Paper className={classes.addTodoContainer}>
-        <Box display="flex" flexDirection="row">
-          <Box flexGrow={3}>
-            <TextField
-              fullWidth
-              value={newTodo.text}
-              onKeyPress={(event) => {
-                if (event.key === "Enter") {
+        <Box sx={{ flexGrow: 1 }}>
+          <Grid container spacing={2}>
+            <Grid item xs={8} md={8}>
+              <TextField
+                fullWidth
+                value={newTodo.text}
+                onKeyPress={(event) => {
+                  if (event.key === "Enter") {
+                    addTodo({
+                      text: newTodo.text,
+                      endDate: newTodo.endDate,
+                    });
+                  }
+                }}
+                onChange={(event) =>
+                  setNewTodo((prevValue) => ({
+                    ...prevValue,
+                    text: event.target.value,
+                  }))
+                }
+              />
+            </Grid>
+            <Grid item xs={4} md={2} sx={{ display: "flex" }}>
+              <DatePicker
+                id="date-picker"
+                selected={newTodo.endDate}
+                onChange={(date) =>
+                  setNewTodo((prevValue) => ({
+                    ...prevValue,
+                    endDate: date,
+                  }))
+                }
+              />
+            </Grid>
+            <Grid
+              item
+              xs={4}
+              md={2}
+              sx={{ display: "flex", justifyContent: "center" }}
+            >
+              <Button
+                className={classes.addTodoButton}
+                startIcon={<Icon>add</Icon>}
+                onClick={() =>
                   addTodo({
                     text: newTodo.text,
                     endDate: newTodo.endDate,
-                  });
+                  })
                 }
-              }}
-              onChange={(event) =>
-                setNewTodo((prevValue) => ({
-                  ...prevValue,
-                  text: event.target.value,
-                }))
-              }
-            />
-          </Box>
-          <DatePicker
-            id="date-picker"
-            selected={newTodo.endDate}
-            onChange={(date) =>
-              setNewTodo((prevValue) => ({
-                ...prevValue,
-                endDate: date,
-              }))
-            }
-          />
-          <Button
-            className={classes.addTodoButton}
-            startIcon={<Icon>add</Icon>}
-            onClick={() =>
-              addTodo({
-                text: newTodo.text,
-                endDate: newTodo.endDate,
-              })
-            }
-          >
-            Add
-          </Button>
+              >
+                Add
+              </Button>
+            </Grid>
+          </Grid>
         </Box>
       </Paper>
-
-      {todos.length > 0 && (
+      {todos.length ? (
         <TodoList
           classes={classes}
           data={todos}
           deleteTodo={deleteTodo}
           toggleComplete={toggleTodoCompleted}
         />
-      )}
-      {!finish ? <div ref={loader} /> : null}
+      ) : null}
     </Container>
   );
 }
 
-const TodoList = ({ classes, data, deleteTodo, toggleTodoCompleted }) => {
+const TodoList = ({ classes, data, deleteTodo, toggleComplete }) => {
   return (
     <Paper className={classes.todosContainer}>
       <Box display="flex" flexDirection="column" alignItems="stretch">
@@ -206,7 +214,7 @@ const TodoList = ({ classes, data, deleteTodo, toggleTodoCompleted }) => {
               key={task.id}
               data={task}
               deleteTodo={deleteTodo}
-              toggleComplete={toggleTodoCompleted}
+              toggleComplete={toggleComplete}
             />
           );
         })}
