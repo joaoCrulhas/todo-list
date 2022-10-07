@@ -23,10 +23,24 @@ const post = async (req, res) => {
     res.end();
 };
 
+const reorderTasks = async (position) => {
+    const tasks = await database.client.db('todos').collection('todos').find( { position: { $gt: (position - 1) } } ).toArray();
+    tasks.forEach(async (task) => {
+        const newPostion =task.position + 1
+        await database.client.db('todos').collection('todos').updateOne({
+            id: task.id
+        }, { $set: {position: newPostion } })
+    });
+}
+
 const put = async (req, res) => {
     const { id } = req.params;
     const { completed, position } = req.body;
-    const fields = (position) ? { completed, position } : { completed }
+    let fields= { completed };
+    if (position) {
+        fields.position = position;
+        await reorderTasks(position);
+    }
     const myquery = { id: id };
     const newvalues = { $set: fields };
     await database.client.db('todos').collection('todos').updateOne(myquery, newvalues)
