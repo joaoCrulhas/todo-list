@@ -199,6 +199,7 @@ function Todos() {
           toggleComplete={toggleTodoCompleted}
         />
       ) : null}
+      {finish ? null : <div ref={loader} />}
     </Container>
   );
 }

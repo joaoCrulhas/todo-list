@@ -25,9 +25,10 @@ const post = async (req, res) => {
 
 const put = async (req, res) => {
     const { id } = req.params;
-    const { completed } = req.body;
+    const { completed, position } = req.body;
+    const fields = (position) ? { completed, position } : { completed }
     const myquery = { id: id };
-    const newvalues = { $set: { completed } };
+    const newvalues = { $set: fields };
     await database.client.db('todos').collection('todos').updateOne(myquery, newvalues)
     res.json({ id })
     res.status(200);
