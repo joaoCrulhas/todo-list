@@ -23,14 +23,37 @@ const post = async (req, res) => {
     res.end();
 };
 
-const reorderTasks = async (position) => {
-    const tasks = await database.client.db('todos').collection('todos').find( { position: { $gt: (position - 1) } } ).toArray();
-    tasks.forEach(async (task) => {
-        const newPostion =task.position + 1
-        await database.client.db('todos').collection('todos').updateOne({
-            id: task.id
-        }, { $set: {position: newPostion } })
-    });
+const reorderTasks = async (position, taskId) => {
+    const todos = await database.client.db('todos').collection('todos').find({}).toArray();
+    const currentElement = todos.filter(element =>  element.id === taskId);
+    const minIndex = Math.min(position, currentElement.position);
+    const maxIndex = Math.max(position, currentElement.position);
+    const newSortedTodos = todos.map((todo) => {
+        let direction = 1;
+        if (position > currentElement.position) {
+          direction = -1;
+        }
+        if (todo.position < minIndex || todo.position > maxIndex) {
+          return todo;
+        }
+        if (todo.id ===taskId) {
+          return {
+            ...todo,
+            position: position,
+          };
+        }
+        return {
+          ...todo,
+          position: todo.position + direction,
+        };
+      });
+      newSortedTodos.sort((a, b) => a.position - b.position);
+      console.log(newSortedTodos);
+      newSortedTodos.forEach(async (task) => {
+          await database.client.db('todos').collection('todos').updateOne({
+              id: task.id
+          }, { $set: {position: task.position } })
+      });
 }
 
 const put = async (req, res) => {
@@ -39,7 +62,7 @@ const put = async (req, res) => {
     let fields= { completed };
     if (position) {
         fields.position = position;
-        await reorderTasks(position);
+        await reorderTasks(position, id);
     }
     const myquery = { id: id };
     const newvalues = { $set: fields };

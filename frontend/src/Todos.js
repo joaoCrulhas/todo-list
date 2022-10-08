@@ -1,3 +1,4 @@
+import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
 import { ApiService } from "./services/api";
 import DatePicker from "react-datepicker";
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -192,12 +193,51 @@ function Todos() {
         </Box>
       </Paper>
       {todos.length ? (
-        <TodoList
-          classes={classes}
-          data={todos}
-          deleteTodo={deleteTodo}
-          toggleComplete={toggleTodoCompleted}
-        />
+        <DragDropContext
+          onDragEnd={(...props) => {
+            const oldTodos = todos;
+            console.log(props);
+            // update para minha api atualizando a posição. fetch();
+            const { destination, source, draggableId } = props[0];
+            const minIndex = Math.min(destination.index, source.index);
+            const maxIndex = Math.max(destination.index, source.index);
+            const newSortedTodos = todos.map((todo) => {
+              let direction = 1;
+              if (destination.index > source.index) {
+                direction = -1;
+              }
+              if (todo.position < minIndex || todo.position > maxIndex) {
+                return todo;
+              }
+              if (todo.id === draggableId) {
+                return {
+                  ...todo,
+                  position: destination.index,
+                };
+              }
+              return {
+                ...todo,
+                position: todo.position + direction,
+              };
+            });
+            newSortedTodos.sort((a, b) => a.position - b.position);
+            setTodos(newSortedTodos);
+          }}
+        >
+          <Droppable droppableId="todoList">
+            {(provider) => (
+              <div ref={provider.innerRef} {...provider.droppableProps}>
+                <TodoList
+                  classes={classes}
+                  data={todos}
+                  deleteTodo={deleteTodo}
+                  toggleComplete={toggleTodoCompleted}
+                />
+                {provider.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
       ) : null}
       {finish ? null : <div ref={loader} />}
     </Container>
@@ -208,15 +248,25 @@ const TodoList = ({ classes, data, deleteTodo, toggleComplete }) => {
   return (
     <Paper className={classes.todosContainer}>
       <Box display="flex" flexDirection="column" alignItems="stretch">
-        {data.map(({ id, text, completed, endDate }) => {
+        {data.map(({ id, text, completed, endDate }, index) => {
           const task = { id, text, completed, endDate, classes };
           return (
-            <Task
-              key={task.id}
-              data={task}
-              deleteTodo={deleteTodo}
-              toggleComplete={toggleComplete}
-            />
+            <Draggable key={task.id} index={index} draggableId={task.id}>
+              {(provider) => (
+                <div
+                  {...provider.draggableProps}
+                  {...provider.dragHandleProps}
+                  ref={provider.innerRef}
+                >
+                  <Task
+                    data={task}
+                    deleteTodo={deleteTodo}
+                    toggleComplete={toggleComplete}
+                  />
+                  {/* {provider.placeholder} */}
+                </div>
+              )}
+            </Draggable>
           );
         })}
       </Box>
