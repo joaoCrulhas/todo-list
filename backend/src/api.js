@@ -26,7 +26,12 @@ app.use(express.urlencoded({ extended: false }));
 
 
 function validateBodyRequest(req, res, next) {
-  const { text } = req.body;
+  const { text, endDate } = req.body;
+  if(!endDate) {
+    res.status(400);
+    res.json({ message: "endDate not provided" });
+    return;
+  }
   if (typeof text !== 'string') {
     res.status(400);
     res.json({ message: "invalid 'text' expected string" });
