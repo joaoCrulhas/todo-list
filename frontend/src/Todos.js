@@ -194,34 +194,38 @@ function Todos() {
       </Paper>
       {todos.length ? (
         <DragDropContext
-          onDragEnd={(...props) => {
+          onDragEnd={async (...props) => {
             const oldTodos = todos;
-            console.log(props);
-            // update para minha api atualizando a posição. fetch();
             const { destination, source, draggableId } = props[0];
-            const minIndex = Math.min(destination.index, source.index);
-            const maxIndex = Math.max(destination.index, source.index);
-            const newSortedTodos = todos.map((todo) => {
-              let direction = 1;
-              if (destination.index > source.index) {
-                direction = -1;
-              }
-              if (todo.position < minIndex || todo.position > maxIndex) {
-                return todo;
-              }
-              if (todo.id === draggableId) {
+            try {
+              await apiService().put(draggableId, undefined, destination.index);
+              const minIndex = Math.min(destination.index, source.index);
+              const maxIndex = Math.max(destination.index, source.index);
+              const newSortedTodos = todos.map((todo) => {
+                let direction = 1;
+                if (destination.index > source.index) {
+                  direction = -1;
+                }
+                if (todo.position < minIndex || todo.position > maxIndex) {
+                  return todo;
+                }
+                if (todo.id === draggableId) {
+                  return {
+                    ...todo,
+                    position: destination.index,
+                  };
+                }
                 return {
                   ...todo,
-                  position: destination.index,
+                  position: todo.position + direction,
                 };
-              }
-              return {
-                ...todo,
-                position: todo.position + direction,
-              };
-            });
-            newSortedTodos.sort((a, b) => a.position - b.position);
-            setTodos(newSortedTodos);
+              });
+              newSortedTodos.sort((a, b) => a.position - b.position);
+              console.log(newSortedTodos);
+              setTodos(newSortedTodos);
+            } catch (error) {
+              setTodos(oldTodos);
+            }
           }}
         >
           <Droppable droppableId="todoList">

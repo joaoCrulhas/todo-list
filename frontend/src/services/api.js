@@ -12,7 +12,7 @@ export class ApiService {
     });
     return { id };
   }
-  async put(id, completed) {
+  async put(id, completed, position = undefined) {
     const response = await fetch(`${this.baseUrl}/${id}`, {
       headers: {
         Accept: "application/json",
@@ -21,6 +21,7 @@ export class ApiService {
       method: "PUT",
       body: JSON.stringify({
         completed,
+        position,
       }),
     });
     return await response.json();

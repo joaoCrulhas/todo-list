@@ -37,7 +37,7 @@ function validateBodyRequest(req, res, next) {
 
 function validateBodyRequestPut(req, res, next) {
   const { completed } = req.body;
-  if (typeof completed !== 'boolean') {
+  if (completed && typeof completed !== 'boolean') {
     res.status(400);
     res.json({ message: "invalid 'completed' expected boolean" });
     return;

@@ -24,45 +24,47 @@ const post = async (req, res) => {
 };
 
 const reorderTasks = async (position, taskId) => {
-    const todos = await database.client.db('todos').collection('todos').find({}).toArray();
-    const currentElement = todos.filter(element =>  element.id === taskId);
-    const minIndex = Math.min(position, currentElement.position);
-    const maxIndex = Math.max(position, currentElement.position);
-    const newSortedTodos = todos.map((todo) => {
-        let direction = 1;
-        if (position > currentElement.position) {
-          direction = -1;
-        }
-        if (todo.position < minIndex || todo.position > maxIndex) {
-          return todo;
-        }
-        if (todo.id ===taskId) {
-          return {
-            ...todo,
-            position: position,
-          };
-        }
-        return {
-          ...todo,
-          position: todo.position + direction,
-        };
-      });
-      newSortedTodos.sort((a, b) => a.position - b.position);
-      console.log(newSortedTodos);
-      newSortedTodos.forEach(async (task) => {
-          await database.client.db('todos').collection('todos').updateOne({
-              id: task.id
-          }, { $set: {position: task.position } })
-      });
+  const todos = await database.client.db('todos').collection('todos').find({}).toArray();
+  const todo = todos.find(element => element.id === taskId);
+  const sourcePosition = todo.position;
+  const minIndex = Math.min(position, sourcePosition);
+  const maxIndex = Math.max(position, sourcePosition);
+  const newSortedTodos = todos.map((todo) => {
+    let direction = 1;
+    if (position > sourcePosition) {
+      direction = -1;
+    }
+    if (todo.position < minIndex || todo.position > maxIndex) {
+      return todo;
+    }
+    if (todo.id === taskId) {
+      return {
+        ...todo,
+        position: position,
+      };
+    }
+    return {
+      ...todo,
+      position: todo.position + direction,
+    };
+  });
+  newSortedTodos.forEach(async ({id, position}) => {
+    const myquery = { id };
+    const newvalues = { $set: { position } };
+    await database.client.db('todos').collection('todos').updateOne(myquery, newvalues)
+  });
 }
 
 const put = async (req, res) => {
     const { id } = req.params;
     const { completed, position } = req.body;
-    let fields= { completed };
-    if (position) {
+    let fields= {};
+    if (position != undefined) {
         fields.position = position;
         await reorderTasks(position, id);
+    }
+    if(completed != undefined) {
+      fields.completed = completed;
     }
     const myquery = { id: id };
     const newvalues = { $set: fields };
